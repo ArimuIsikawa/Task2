@@ -47,16 +47,14 @@ namespace Task2
         {
             var tasks = new Task[8];
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 6; ++i)
             {
-                int index = i;
                 tasks[i] = Task.Run(() => {
-                    var count = Server.GetCount();
-                    Console.WriteLine($"Task {index}: \"Current count = {count}\"");
+                    Console.WriteLine($"Read count = {Server.GetCount()}");
                 });
             }
 
-            for (int i = 6; i < tasks.Length; i++)
+            for (int i = 6; i < tasks.Length; ++i)
             {
                 int index = i;
                 tasks[i] = Task.Run(() => {
@@ -66,9 +64,14 @@ namespace Task2
             }
 
             await Task.WhenAll(tasks);
+            // Иногда WriteLine не успевает за изменениями в Server. 
+            // Либо оставить так, ибо на фактическом значении count оно не влияет, либо вынести WriteLine внутрь методов сервера.
 
             Console.ReadKey();
             Server.Destroy();
+            
+            for (int i = 0; i < tasks.Length; ++i)
+                tasks[i].Dispose();
         }
     }
 }
