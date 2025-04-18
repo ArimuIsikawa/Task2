@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Task2
 {
@@ -33,62 +34,41 @@ namespace Task2
                 rwLock.ExitWriteLock();
             }
         }
+
+        public static void Destroy()
+        {
+            rwLock.Dispose();
+        }
     }
 
     internal class Program
     {
-        public static void Main()
+        public static async Task Main()
         {
-            // Пример использования
-            Thread writerThread1 = new Thread(() =>
+            var tasks = new Task[8];
+
+            for (int i = 0; i < 6; i++)
             {
-                for (int i = 0; i < 5; i++)
-                {
-                    Server.AddToCount(1);
-                    Console.WriteLine("Writer1: Added 1 to count.");
-                    Thread.Sleep(100);
-                }
-            });
+                int index = i;
+                tasks[i] = Task.Run(() => {
+                    var count = Server.GetCount();
+                    Console.WriteLine($"Task {index}: \"Current count = {count}\"");
+                });
+            }
 
-            Thread writerThread2 = new Thread(() =>
+            for (int i = 6; i < tasks.Length; i++)
             {
-                for (int i = 0; i < 5; i++)
-                {
-                    Server.AddToCount(1);
-                    Console.WriteLine("Writer2: Added 1 to count.");
-                    Thread.Sleep(70);
-                }
-            });
+                int index = i;
+                tasks[i] = Task.Run(() => {
+                    Server.AddToCount(index);
+                    Console.WriteLine($"Task {index}: \"Add {index} to count\"");
+                });
+            }
 
-            Thread readerThread1 = new Thread(() =>
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    Console.WriteLine($"Current count from Reader 1: {Server.GetCount()}");
-                    Thread.Sleep(50);
-                }
-            });
-
-            Thread readerThread2 = new Thread(() =>
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    Console.WriteLine($"Current count from Reader 2: {Server.GetCount()}");
-                    Thread.Sleep(60);
-                }
-            });
-
-            writerThread1.Start();
-            writerThread2.Start();
-            readerThread1.Start();
-            readerThread2.Start();
-
-            writerThread1.Join();
-            writerThread2.Join();
-            readerThread1.Join();
-            readerThread2.Join();
+            await Task.WhenAll(tasks);
 
             Console.ReadKey();
+            Server.Destroy();
         }
     }
 }
